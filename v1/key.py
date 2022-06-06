@@ -27,7 +27,7 @@ class Key(BaseModel):
     description="키를 불러옵니다.",
     response_model=Key
 )
-async def key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
+async def fetch_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     if auth.credentials != token:
         raise HTTPException(
             status_code=403,
@@ -57,7 +57,7 @@ async def key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     description="키를 생성합니다.",
     response_model=Key
 )
-async def key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
+async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     if auth.credentials != token:
         raise HTTPException(
             status_code=403,
@@ -84,3 +84,32 @@ async def key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
         key=key_store.key,
         iv=key_store.iv,
     )
+
+
+@router.delete(
+    "/key",
+    description="키를 삭제합니다.",
+)
+async def delete_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
+    if auth.credentials != token:
+        raise HTTPException(
+            status_code=403,
+            detail="invalid token detected"
+        )
+
+    session = get_session()
+
+    result = session.query(KeyStore).filter_by(
+        owner_id=owner_id,
+        mail_id=mail_id
+    ).delete()
+
+    session.commit()
+
+    if result == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="already deleted"
+        )
+
+    return {}
