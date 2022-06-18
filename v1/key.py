@@ -77,6 +77,11 @@ async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     try:
         session.add(key_store)
         session.commit()
+
+        response = Key(
+            key=key_store.key,
+            iv=key_store.iv,
+        )
     except IntegrityError:
         raise HTTPException(
             status_code=400,
@@ -85,10 +90,7 @@ async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     finally:
         session.close()
 
-    return Key(
-        key=key_store.key,
-        iv=key_store.iv,
-    )
+    return response
 
 
 @router.delete(
