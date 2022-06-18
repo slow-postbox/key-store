@@ -40,6 +40,8 @@ async def fetch_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
         mail_id=mail_id
     ).first()
 
+    session.close()
+
     if key_store is None:
         raise HTTPException(
             status_code=404,
@@ -70,8 +72,9 @@ async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     key_store.key = token_bytes(32).hex()
     key_store.iv = token_bytes(16).hex()
 
+    session = get_session()
+
     try:
-        session = get_session()
         session.add(key_store)
         session.commit()
     except IntegrityError:
@@ -79,6 +82,8 @@ async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
             status_code=400,
             detail="already key store created"
         )
+    finally:
+        session.close()
 
     return Key(
         key=key_store.key,
@@ -105,6 +110,7 @@ async def delete_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     ).delete()
 
     session.commit()
+    session.close()
 
     if result == 0:
         raise HTTPException(
