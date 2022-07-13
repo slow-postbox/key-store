@@ -66,22 +66,20 @@ async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
             detail="invalid token detected"
         )
 
+    key = token_bytes(32).hex()
+    iv = token_bytes(16).hex()
+
     key_store = KeyStore()
     key_store.owner_id = owner_id
     key_store.mail_id = mail_id
-    key_store.key = token_bytes(32).hex()
-    key_store.iv = token_bytes(16).hex()
+    key_store.key = key
+    key_store.iv = iv
 
     session = get_session()
 
     try:
         session.add(key_store)
         session.commit()
-
-        response = Key(
-            key=key_store.key,
-            iv=key_store.iv,
-        )
     except IntegrityError:
         raise HTTPException(
             status_code=400,
@@ -90,7 +88,10 @@ async def create_key(owner_id: int, mail_id: int, auth=Depends(auth_scheme)):
     finally:
         session.close()
 
-    return response
+    return Key(
+        key=key,
+        iv=iv,
+    )
 
 
 @router.delete(
